@@ -2,48 +2,56 @@ import React, { Component } from 'react';
 import { Alert, Animated, TouchableWithoutFeedback, Text, View, StyleSheet, Easing} from 'react-native';
 
 export default class App extends React.Component {
+  
   render() {
+    var block = [] 
+    for(var i =0; i<21; i++){
+      var pos= i/20
+      block.push(<Block startPos={pos}/>)
+    }
     return (
-        <Block />
+      <View>
+        {block}
+      </View>
     );
   }
 }
 
 class Block extends Component {
-	constructor(props) {
-		super(props)
-		this.animatedValue = new Animated.Value(0)
+  constructor(props) {
+    super(props)
+    this.animatedValue = new Animated.Value(0)
   this.state = {col:"red"}
-	}
-	componentDidMount () {
-  this.animate(0.5)
+  this.startPos = parseFloat(this.props.startPos)
+  }
+
+  componentDidMount () {
+  this.animate(this.startPos)
 }
 
 animate (pos) {
   this.setState({col: this.chooseCol()})
   this.animatedValue.setValue(pos)
+  var timeMulti = (1-pos)
+  if(pos==0 || pos == 1){
+    timeMulti = 1
+  }
   Animated.timing(
     this.animatedValue,
     {
       toValue: 1,
-      duration: 2750,
+      duration: 3000*timeMulti,
       easing: Easing.linear
     }
   ).start(() => this.animate(0))
 }
 
 chooseCol(){
-	var col = "red"
-	var num = Math.random()
-	// Alert.alert(num)
-  if(num<0.75){
-  	col = "green"
-  }
-  if(num<0.5){
-  	col="black"
-  }
-  if(num<0.25){
-  	col = "yellow"
+  var col = "white"
+  var num = Math.random()
+  // Alert.alert(num)
+  if(num<0.7){
+    col="black"
   }
 
   return col
@@ -52,16 +60,16 @@ chooseCol(){
 render () { 
   const marginLeft = this.animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [380, -19]
+    outputRange: [420, -19]
   })
 
-	return (
+  return (
     <View style={styles.container}>
       <Animated.View
         style={{
           marginLeft,
-          height: 5,
-          width: 20,
+          height: 500,
+          width: 21,
           top: 300,
           backgroundColor: this.state.col}}>
       </Animated.View>
