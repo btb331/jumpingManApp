@@ -1,21 +1,47 @@
 import React, { Component } from 'react';
-import { Alert, Animated, TouchableWithoutFeedback, Text, View, StyleSheet, Easing} from 'react-native';
+import { Dimensions, Alert, Animated, TouchableWithoutFeedback, Text, View, StyleSheet, Easing} from 'react-native';
 
 export default class App extends React.Component {
   
   render() {
     var block = [] 
-    for(var i =0; i<21; i++){
-      var pos= i/20
-      block.push(<Block startPos={pos}/>)
+    var numBlocks = 8
+    for(var i =1; i<numBlocks; i++){
+      var pos= i/(numBlocks-1)
+      block.push(<Block startPos={pos} numBlocks={numBlocks}/>)
     }
     return (
+      <TouchableWithoutFeedback onPress={this.tap}>
+      <View style={styles.container2}>
       <View>
         {block}
       </View>
+      <Ball/>
+      </View>
+      </TouchableWithoutFeedback>
     );
   }
+
+  tap(){
+    Alert.alert("helo")
+  }
 }
+
+class Ball extends Component{
+  render(){
+    const marginTop = 100
+    return(
+    <View    style={{position: 'absolute',
+    width:50,
+    height:50,
+    borderRadius: 100/2,
+    backgroundColor: 'red',
+    top:marginTop,
+    left:15}}>
+    </View>)
+  }
+}
+
 
 class Block extends Component {
   constructor(props) {
@@ -23,6 +49,7 @@ class Block extends Component {
     this.animatedValue = new Animated.Value(0)
   this.state = {col:"red"}
   this.startPos = parseFloat(this.props.startPos)
+  this.width = Dimensions.get('window').width/(this.props.numBlocks-2.75)
   }
 
   componentDidMount () {
@@ -40,14 +67,14 @@ animate (pos) {
     this.animatedValue,
     {
       toValue: 1,
-      duration: 3000*timeMulti,
+      duration: 4000*timeMulti,
       easing: Easing.linear
     }
   ).start(() => this.animate(0))
 }
 
 chooseCol(){
-  var col = "white"
+  var col = "red"
   var num = Math.random()
   // Alert.alert(num)
   if(num<0.7){
@@ -60,7 +87,7 @@ chooseCol(){
 render () { 
   const marginLeft = this.animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [420, -19]
+    outputRange: [Dimensions.get('window').width, -this.width]
   })
 
   return (
@@ -69,9 +96,11 @@ render () {
         style={{
           marginLeft,
           height: 500,
-          width: 21,
+          width: this.width,
           top: 300,
-          backgroundColor: this.state.col}}>
+          backgroundColor: this.state.col,
+          padding: 0,
+          margin: 0}}>
       </Animated.View>
     </View>
 )}
@@ -80,6 +109,14 @@ render () {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ecf0f1',
+    // backgroundColor: '#ecf0f1',
+  },
+  container2:{
+    position: 'absolute',
+    top:0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'white'
   }
 });
