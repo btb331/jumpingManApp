@@ -3,41 +3,103 @@ import { Dimensions, Alert, Animated, TouchableWithoutFeedback, Text, View, Styl
 
 export default class App extends React.Component {
   
-  render() {
-    var block = [] 
+  constructor() {
+    super();
+    this.state = { animatedBall: new Animated.Value(0), animateBlock: new Animated.Value(0) }
+    this.tap = this.tap.bind(this)
     var numBlocks = 8
-    for(var i =1; i<numBlocks; i++){
-      var pos= i/(numBlocks-1)
-      block.push(<Block startPos={pos} numBlocks={numBlocks}/>)
-    }
+    this.blockWidth = Dimensions.get('window').width/(numBlocks-2.75)
+  }
+
+  componentDidMount(){
+    this.animateBlock()
+  }
+
+  componentWillUpdate () {
+
+  }
+
+  animateBlock(){
+    this.state.animateBlock.setValue(0)
+    Animated.timing(
+      this.state.animateBlock,
+      {
+        toValue: 1,
+        duration: 4000,
+        easing: Easing.linear
+      }
+    ).start(() => this.animateBlock())
+  }
+
+  bounce () {
+    this.state.animatedBall.setValue(0)
+    var duration = 500
+    Animated.sequence([
+      Animated.timing(
+      this.state.animatedBall,
+      {
+        toValue: 1,
+        duration: duration,
+        easing: Easing.linear
+      }
+    ), 
+    Animated.timing(
+      this.state.animatedBall,
+      {
+        toValue: 0,
+        duration: duration,
+        easing: Easing.linear
+      })]).start()
+  }
+
+  tap(){
+    this.bounce(0)
+  }
+
+  render() {
+    
+
+    const top = this.state.animatedBall.interpolate({
+      inputRange: [0, 1],
+      outputRange: [250, 100]
+    })
+
+    const left = this.state.animateBlock.interpolate({
+      inputRange: [0, 1],
+      outputRange: [Dimensions.get('window').width, -this.blockWidth]
+    })
+
+    console.log(left)
+    
     return (
       <TouchableWithoutFeedback onPress={this.tap}>
-      <View style={styles.container2}>
-      <View>
-        {block}
-      </View>
-      <Ball/>
-      </View>
+        <View style={styles.container2}>
+        <View>
+          <Block left={left} width={this.blockWidth} pos={0}/>
+          <Block left={left} width={this.blockWidth} pos={1}/>
+        </View>
+        <Ball topMargin={top}/>
+        </View>
       </TouchableWithoutFeedback>
     );
   }
 
-  tap(){
-    Alert.alert("helo")
-  }
+  
 }
 
 class Ball extends Component{
   render(){
-    const marginTop = 100
     return(
-    <View    style={{position: 'absolute',
-    width:50,
-    height:50,
-    borderRadius: 100/2,
-    backgroundColor: 'red',
-    top:marginTop,
-    left:15}}>
+    <View>
+      <Animated.View 
+        style={{position: 'absolute',
+        width:50,
+        height:50,
+        borderRadius: 100/2,
+        backgroundColor: 'red',
+        top: this.props.topMargin,
+        left:15}}>
+      </Animated.View>
     </View>)
   }
 }
@@ -46,61 +108,50 @@ class Ball extends Component{
 class Block extends Component {
   constructor(props) {
     super(props)
-    this.animatedValue = new Animated.Value(0)
-  this.state = {col:"red"}
-  this.startPos = parseFloat(this.props.startPos)
-  this.width = Dimensions.get('window').width/(this.props.numBlocks-2.75)
+    this.state = {col:"red"}
   }
 
-  componentDidMount () {
-  this.animate(this.startPos)
-}
+// animate (pos) {
+//   this.setState({col: this.chooseCol()})
+//   this.animatedValue.setValue(pos)
+//   var timeMulti = (1-pos)
+//   if(pos==0 || pos == 1){
+//     timeMulti = 1
+//   }
+//   Animated.timing(
+//     this.animatedValue,
+//     {
+//       toValue: 1,
+//       duration: 4000*timeMulti,
+//       easing: Easing.linear
+//     }
+//   ).start(() => this.animate(0))
+// }
 
-animate (pos) {
-  this.setState({col: this.chooseCol()})
-  this.animatedValue.setValue(pos)
-  var timeMulti = (1-pos)
-  if(pos==0 || pos == 1){
-    timeMulti = 1
-  }
-  Animated.timing(
-    this.animatedValue,
-    {
-      toValue: 1,
-      duration: 4000*timeMulti,
-      easing: Easing.linear
-    }
-  ).start(() => this.animate(0))
-}
+// chooseCol(){
+//   var col = "white"
+//   var num = Math.random()
+//   // Alert.alert(num)
+//   if(num<0.7){
+//     col="black"
+//   }
 
-chooseCol(){
-  var col = "red"
-  var num = Math.random()
-  // Alert.alert(num)
-  if(num<0.7){
-    col="black"
-  }
-
-  return col
-} 
+//   return col
+// } 
 
 render () { 
-  const marginLeft = this.animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [Dimensions.get('window').width, -this.width]
-  })
 
   return (
     <View style={styles.container}>
       <Animated.View
         style={{
-          marginLeft,
           height: 500,
-          width: this.width,
+          width: this.props.width,
           top: 300,
           backgroundColor: this.state.col,
           padding: 0,
-          margin: 0}}>
+          margin: 0,
+          marginLeft: this.props.left}}>
       </Animated.View>
     </View>
 )}
