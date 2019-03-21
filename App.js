@@ -5,16 +5,22 @@ export default class App extends React.Component {
   
   constructor() {
     super();
-    this.state = { animatedBall: new Animated.Value(0), blockAniValues:[new Animated.Value(0), new Animated.Value(0)] }
+    var blockValues = new Array(8)
+    blockValues.fill(new Animated.Value(0))
+    this.state = { animatedBall: new Animated.Value(0), blockAniValues:[]}
     this.tap = this.tap.bind(this)
-    var numBlocks = 8
-    this.blockWidth = Dimensions.get('window').width/(numBlocks-2.75)
+    this.numBlocks = 8
+    this.blockWidth = Dimensions.get('window').width/(this.numBlocks-2.75)
     this.lastBlock = "0"
+    for(var i = 0; i<this.numBlocks; i++){
+      this.state.blockAniValues.push(new Animated.Value(0))
+    }
   }
 
   componentDidMount(){
-    this.animateBlock(this.state.blockAniValues[0], 0, "1")
-    this.animateBlock(this.state.blockAniValues[1], 0.5, "2")
+    for(var i = 0; i<this.numBlocks; i++){
+      this.animateBlock(this.state.blockAniValues[i], i/7, i)
+    }
   }
 
   componentWillUpdate () {
@@ -78,15 +84,20 @@ export default class App extends React.Component {
       outputRange: [250, 100]
     })
 
-  const left = [this.state.blockAniValues[0].interpolate({
+  var left = []
+
+  for(i=0; i<this.numBlocks; i++){
+    left.push(this.state.blockAniValues[i].interpolate({
       inputRange: [0, 1],
       outputRange: [Dimensions.get('window').width, -this.blockWidth]
-    }),
-    this.state.blockAniValues[1].interpolate({
-      inputRange: [0, 1],
-      outputRange: [Dimensions.get('window').width, -this.blockWidth]
-    })
-  ]
+    }))
+  }
+
+  blocks = []
+
+  for(var i = 0; i<this.numBlocks; i++){
+    blocks.push(<Block left={left[i]} width={this.blockWidth}/>)
+  }
 
 
 
@@ -97,8 +108,7 @@ export default class App extends React.Component {
       <TouchableWithoutFeedback onPress={this.tap}>
         <View style={styles.container2}>
         <View>
-          <Block left={left[0]} width={this.blockWidth} pos={0}/>
-          <Block left={left[1]} width={this.blockWidth} pos={1}/>
+        {blocks}
         </View>
         <Ball topMargin={top}/>
         </View>
