@@ -5,30 +5,43 @@ export default class App extends React.Component {
   
   constructor() {
     super();
-    this.state = { animatedBall: new Animated.Value(0), animateBlock: new Animated.Value(0) }
+    this.state = { animatedBall: new Animated.Value(0), blockAniValues:[new Animated.Value(0), new Animated.Value(0)] }
     this.tap = this.tap.bind(this)
     var numBlocks = 8
     this.blockWidth = Dimensions.get('window').width/(numBlocks-2.75)
+    this.lastBlock = "0"
   }
 
   componentDidMount(){
-    this.animateBlock()
+    this.animateBlock(this.state.blockAniValues[0], 0, "1")
+    this.animateBlock(this.state.blockAniValues[1], 0.5, "2")
   }
 
   componentWillUpdate () {
 
   }
 
-  animateBlock(){
-    this.state.animateBlock.setValue(0)
+  animateBlock(animateValue, startValue, blockNum){
+    animateValue.setValue(startValue)
+    var timeMulti = (1-startValue)
+    if(startValue==0 || startValue == 1){
+      timeMulti = 1
+    }
     Animated.timing(
-      this.state.animateBlock,
+      animateValue,
       {
         toValue: 1,
-        duration: 4000,
+        duration: 4000*timeMulti,
         easing: Easing.linear
       }
-    ).start(() => this.animateBlock())
+    ).start(() => {
+      this.animateBlock(animateValue, 0)
+      this.lastBlock = blockNum
+    })
+  }
+
+  restartanimation(){
+
   }
 
   bounce () {
@@ -54,6 +67,7 @@ export default class App extends React.Component {
 
   tap(){
     this.bounce(0)
+    Alert.alert(this.lastBlock)
   }
 
   render() {
@@ -64,10 +78,18 @@ export default class App extends React.Component {
       outputRange: [250, 100]
     })
 
-    const left = this.state.animateBlock.interpolate({
+  const left = [this.state.blockAniValues[0].interpolate({
+      inputRange: [0, 1],
+      outputRange: [Dimensions.get('window').width, -this.blockWidth]
+    }),
+    this.state.blockAniValues[1].interpolate({
       inputRange: [0, 1],
       outputRange: [Dimensions.get('window').width, -this.blockWidth]
     })
+  ]
+
+
+
 
     console.log(left)
     
@@ -75,8 +97,8 @@ export default class App extends React.Component {
       <TouchableWithoutFeedback onPress={this.tap}>
         <View style={styles.container2}>
         <View>
-          <Block left={left} width={this.blockWidth} pos={0}/>
-          <Block left={left} width={this.blockWidth} pos={1}/>
+          <Block left={left[0]} width={this.blockWidth} pos={0}/>
+          <Block left={left[1]} width={this.blockWidth} pos={1}/>
         </View>
         <Ball topMargin={top}/>
         </View>
@@ -151,7 +173,7 @@ render () {
           backgroundColor: this.state.col,
           padding: 0,
           margin: 0,
-          marginLeft: this.props.left}}>
+          left: this.props.left}}>
       </Animated.View>
     </View>
 )}
