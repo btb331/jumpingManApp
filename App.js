@@ -5,29 +5,37 @@ export default class App extends React.Component {
   
   constructor() {
     super();
-    var blockValues = new Array(8)
-    blockValues.fill(new Animated.Value(0))
-    this.state = { animatedBall: new Animated.Value(0), blockAniValues:[]}
+    this.state = { animatedBall: new Animated.Value(0), blockValues:[]}
     this.tap = this.tap.bind(this)
     this.numBlocks = 8
     this.blockWidth = Dimensions.get('window').width/(this.numBlocks-2.75)
     this.lastBlock = "0"
     for(var i = 0; i<this.numBlocks; i++){
-      this.state.blockAniValues.push(new Animated.Value(0))
+      this.state.blockValues.push({aniValue:new Animated.Value(0), col:"white"})
     }
   }
 
   componentDidMount(){
     for(var i = 0; i<this.numBlocks; i++){
-      this.animateBlock(this.state.blockAniValues[i], i/7, i)
+      this.animateBlock(this.state.blockValues[i]['aniValue'], i/7, i)
     }
   }
 
-  componentWillUpdate () {
-
+  chooseCol(){
+  var col = "white"
+  var num = Math.random()
+  // Alert.alert(num)
+  if(num<0.7){
+    col="black"
   }
 
+  return col
+} 
+
   animateBlock(animateValue, startValue, blockNum){
+    var copyState = [...this.state.blockValues]
+    copyState[blockNum]['col']= this.chooseCol()
+    this.setState({blockValues:copyState})
     animateValue.setValue(startValue)
     var timeMulti = (1-startValue)
     if(startValue==0 || startValue == 1){
@@ -41,13 +49,9 @@ export default class App extends React.Component {
         easing: Easing.linear
       }
     ).start(() => {
-      this.animateBlock(animateValue, 0)
+      this.animateBlock(animateValue, 0, blockNum)
       this.lastBlock = blockNum
     })
-  }
-
-  restartanimation(){
-
   }
 
   bounce () {
@@ -87,23 +91,19 @@ export default class App extends React.Component {
   var left = []
 
   for(i=0; i<this.numBlocks; i++){
-    left.push(this.state.blockAniValues[i].interpolate({
+    left.push(this.state.blockValues[i]['aniValue'].interpolate({
       inputRange: [0, 1],
       outputRange: [Dimensions.get('window').width, -this.blockWidth]
     }))
   }
 
-  blocks = []
+  var blocks = []
 
   for(var i = 0; i<this.numBlocks; i++){
-    blocks.push(<Block left={left[i]} width={this.blockWidth}/>)
+    blocks.push(<Block left={left[i]} width={this.blockWidth} col={this.state.blockValues[i]['col']}/>)
   }
 
-
-
-
-    console.log(left)
-    
+   
     return (
       <TouchableWithoutFeedback onPress={this.tap}>
         <View style={styles.container2}>
@@ -180,7 +180,7 @@ render () {
           height: 500,
           width: this.props.width,
           top: 300,
-          backgroundColor: this.state.col,
+          backgroundColor: this.props.col,
           padding: 0,
           margin: 0,
           left: this.props.left}}>
