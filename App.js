@@ -8,16 +8,20 @@ export default class App extends React.Component {
     this.state = { animatedBall: new Animated.Value(0), blockValues:[]}
     this.tap = this.tap.bind(this)
     this.numBlocks = 8
-    this.blockWidth = Dimensions.get('window').width/(this.numBlocks-2.75)
+    this.blockWidth = Dimensions.get('window').width/(this.numBlocks-2.1)
     this.lastBlock = "0"
+    var cols = [
+      "red", "yellow", "green", "black", "white", "orange", "purple", "pink", "grey"
+    ]
     for(var i = 0; i<this.numBlocks; i++){
-      this.state.blockValues.push({aniValue:new Animated.Value(0), col:"white"})
+      this.state.blockValues.push({aniValue:new Animated.Value(0), col:cols[i]})
     }
+    this.jumping = false
   }
 
   componentDidMount(){
     for(var i = 0; i<this.numBlocks; i++){
-      this.animateBlock(this.state.blockValues[i]['aniValue'], i/7, i)
+      this.animateBlock(this.state.blockValues[i]['aniValue'], i/8, i)
     }
   }
 
@@ -25,7 +29,7 @@ export default class App extends React.Component {
   var col = "white"
   var num = Math.random()
   // Alert.alert(num)
-  if(num<0.7){
+  if(num<0.65){
     col="black"
   }
 
@@ -50,12 +54,18 @@ export default class App extends React.Component {
       }
     ).start(() => {
       this.animateBlock(animateValue, 0, blockNum)
-      this.lastBlock = blockNum
+      this.lastBlock = this.myMod((blockNum - 2), 8)
+      this.deathcheck()
     })
+  }
+
+  myMod(n, m) {
+    return ((n % m) + m) % m;
   }
 
   bounce () {
     this.state.animatedBall.setValue(0)
+    this.jumping=true
     var duration = 500
     Animated.sequence([
       Animated.timing(
@@ -72,16 +82,25 @@ export default class App extends React.Component {
         toValue: 0,
         duration: duration,
         easing: Easing.linear
-      })]).start()
+      })]).start(()=>{
+        this.jumping=false
+        this.deathcheck()
+        })
+  }
+
+  deathcheck(){
+    if(this.state.blockValues[this.lastBlock]['col']=="white" && !this.jumping){
+      Alert.alert("You Dead")
+    }
   }
 
   tap(){
     this.bounce(0)
-    Alert.alert(this.lastBlock)
   }
 
   render() {
-    
+
+   
 
     const top = this.state.animatedBall.interpolate({
       inputRange: [0, 1],
