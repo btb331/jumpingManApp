@@ -3,222 +3,292 @@ import { Dimensions, Alert, Animated, TouchableWithoutFeedback, Text, View, Styl
 
 export default class App extends React.Component {
   
-  constructor() {
-    super();
-    this.state = { animatedBall: new Animated.Value(0), blockValues:[]}
-    this.tap = this.tap.bind(this)
-    this.numBlocks = 8
-    this.blockWidth = Dimensions.get('window').width/(this.numBlocks-2.1)
-    this.lastBlock = "0"
-    var cols = [
-      "red", "yellow", "green", "black", "white", "orange", "purple", "pink", "grey"
-    ]
-    for(var i = 0; i<this.numBlocks; i++){
-      this.state.blockValues.push({aniValue:new Animated.Value(0), col:cols[i]})
-    }
-    this.jumping = false
-  }
+  	constructor() {
+	  	super();
 
-  componentDidMount(){
-    for(var i = 0; i<this.numBlocks; i++){
-      this.animateBlock(this.state.blockValues[i]['aniValue'], i/8, i)
-    }
-  }
+	    //set the number of block and width
+	    this.numBlocks = 8
+	    this.blockWidth = Dimensions.get('window').width/(this.numBlocks-2.1)
 
-  chooseCol(){
-  var col = "white"
-  var num = Math.random()
-  // Alert.alert(num)
-  if(num<0.65){
-    col="black"
-  }
+      this.state = { animatedBall: new Animated.Value(0), blockValues:[], score:-this.numBlocks+1, highScore:0}
+	    this.tap = this.tap.bind(this)
 
-  return col
-} 
+	    //last block is the block on the left of the screen so know when ball goes over hole
+	    this.lastBlock = "0"
 
-  animateBlock(animateValue, startValue, blockNum){
-    var copyState = [...this.state.blockValues]
-    copyState[blockNum]['col']= this.chooseCol()
-    this.setState({blockValues:copyState})
-    animateValue.setValue(startValue)
-    var timeMulti = (1-startValue)
-    if(startValue==0 || startValue == 1){
-      timeMulti = 1
-    }
-    Animated.timing(
-      animateValue,
-      {
-        toValue: 1,
-        duration: 4000*timeMulti,
-        easing: Easing.linear
+	    //set up the animation values for each block
+	    for(var i = 0; i<this.numBlocks; i++){
+	      this.state.blockValues.push({aniValue:new Animated.Value(0), col:"red"})
+	    }
+
+	    this.jumping = false
+	    this.alive = true
+  	}
+
+  	componentDidMount(){
+  	//start animation once block mounts
+	   for(var i = 0; i<this.numBlocks; i++){
+	    	this.animateBlock(this.state.blockValues[i]['aniValue'], i/8, i, true)
+	    }
+  	}
+
+	chooseCol(){
+  	//function to choose the random colour
+  		var col = "white"
+	  	var num = Math.random()
+
+	  	if(num<0.65){
+	    	col="black"
+	  	}
+
+	  	return col
+	} 
+
+  	animateBlock(animateValue, startValue, blockNum, firstTime){
+  		//this function animates the blocks, and choosing the colour, its callbacked at the end to make the animation recurseve
+
+	  	//if its the first time make it all red., otherwise choose a colour
+	  	if(!firstTime){
+	    	var copyState = [...this.state.blockValues]
+	    	copyState[blockNum]['col']= this.chooseCol()
+	    	this.setState({blockValues:copyState})
+        //increment the score
+      	this.setState({score:this.state.score+1})
+	    }
+    	animateValue.setValue(startValue)
+
+    	
+
+      	//when first called need to adjust the duration 
+    	var timeMulti = (1-startValue)
+    	if(startValue==0 || startValue == 1){
+      		timeMulti = 1
+    	}
+
+    	//animated the animatedValue
+    	Animated.timing(
+      	animateValue,
+      	{toValue: 1,
+	        duration: 4000*timeMulti,
+	        easing: Easing.linear
+      	}).start(() => {
+      		//if alive continue the animation and check if player should die 
+    		if(this.alive){
+	      		this.animateBlock(animateValue, 0, blockNum, false)
+	      		this.deathcheck()
+      		}
+      	//lastblock is the one 2 back from one going off the screen
+      	this.lastBlock = this.myMod((blockNum - 2), 8)
+    	})
+  	}
+
+  	//own mod function as native one can't handle negative values
+  	myMod(n, m) {
+    	return ((n % m) + m) % m;
+  	}
+
+  	bounce () {
+  		//if its already jumping don't allow to jumpinh again
+  		if(this.jumping){
+  			return
+  		}
+
+	    this.state.animatedBall.setValue(0)
+	    this.jumping=true
+
+	    var duration = 500
+
+	    //sequence for the ball to go up and then down.
+	    Animated.sequence([
+	     	Animated.timing(
+	      	this.state.animatedBall,
+	      	{toValue: 1,
+	        	duration: duration,
+	        	easing: Easing.linear
+	      	}
+	    ), 
+	    Animated.timing(
+	     	this.state.animatedBall,
+	      	{toValue: 0,
+	        	duration: duration,
+	        	easing: Easing.linear
+	      	})]
+	    ).start(()=>{
+	        this.jumping=false
+	        this.deathcheck()
+		})
+  	}
+
+  	deathcheck(){
+  		//checks if block ball is white and if the ball is not jumping
+    	if(this.state.blockValues[this.lastBlock]['col']=="white" && !this.jumping){
+	      	this.alive = false
+
+		    this.stopAnimation()
+
+	      	Alert.alert("You Dead", "You scored " + this.state.score, [{text:'Try again', onPress: () => {this.startAnimation()}}] , { onDismiss: () => {this.startAnimation()} })
+
+	      	if(this.state.score > this.state.highScore){
+	      		this.setState({highScore:this.state.score})
+	      	}
+    	}
+  	}
+
+  	startAnimation(){
+  		//called to restart animation after player dies
+	  	this.setState({score:-this.numBlocks+1})
+	  	this.state.blockValues=[]
+
+	  	for(var i = 0; i<this.numBlocks; i++){
+	      this.state.blockValues.push({aniValue:new Animated.Value(0), col:"red"})
+	    }
+
+	    for(var i = 0; i<this.numBlocks; i++){
+	      this.animateBlock(this.state.blockValues[i]['aniValue'], i/8, i, true)
+	    }
+	    this.alive=true
+  	}
+
+  	stopAnimation(){
+    	for(var i = 0; i<this.numBlocks; i++){
+      	this.state.blockValues[i]['aniValue'].stopAnimation()
+    	}
+  	}
+
+  	tap(){
+    	this.bounce(0)
+  	}
+
+
+  	render() {
+
+  		//used to animate the ball
+	    const top = this.state.animatedBall.interpolate({
+	      inputRange: [0, 1],
+	      outputRange: [250, 100]
+	    })
+
+  		var left = []
+
+	  	//loop though the blockValues and interpolate
+		for(i=0; i<this.numBlocks; i++){
+		    left.push(this.state.blockValues[i]['aniValue'].interpolate({
+		      inputRange: [0, 1],
+		      outputRange: [Dimensions.get('window').width, -this.blockWidth]
+		    }))
+		}
+
+  		var blocks = []
+
+	  	//create blocks with width and colour props
+	  	for(var i = 0; i<this.numBlocks; i++){
+	    	blocks.push(<Block left={left[i]} width={this.blockWidth} col={this.state.blockValues[i]['col']}/>)
+	  	}
+
+      var score
+
+      if(this.state.score<0){
+        score = 0
+      }else{
+        score = this.state.score
       }
-    ).start(() => {
-      this.animateBlock(animateValue, 0, blockNum)
-      this.lastBlock = this.myMod((blockNum - 2), 8)
-      this.deathcheck()
-    })
-  }
-
-  myMod(n, m) {
-    return ((n % m) + m) % m;
-  }
-
-  bounce () {
-    this.state.animatedBall.setValue(0)
-    this.jumping=true
-    var duration = 500
-    Animated.sequence([
-      Animated.timing(
-      this.state.animatedBall,
-      {
-        toValue: 1,
-        duration: duration,
-        easing: Easing.linear
-      }
-    ), 
-    Animated.timing(
-      this.state.animatedBall,
-      {
-        toValue: 0,
-        duration: duration,
-        easing: Easing.linear
-      })]).start(()=>{
-        this.jumping=false
-        this.deathcheck()
-        })
-  }
-
-  deathcheck(){
-    if(this.state.blockValues[this.lastBlock]['col']=="white" && !this.jumping){
-      Alert.alert("You Dead")
-    }
-  }
-
-  tap(){
-    this.bounce(0)
-  }
-
-  render() {
 
    
+	    return (
+	      	<TouchableWithoutFeedback onPress={this.tap}>
+	        	<View style={styles.container2}>
 
-    const top = this.state.animatedBall.interpolate({
-      inputRange: [0, 1],
-      outputRange: [250, 100]
-    })
+	        		<Text style={styles.highScore}>Top Score: {this.state.highScore}</Text>
 
-  var left = []
+	        		<Text style={styles.score}>{score}</Text>
 
-  for(i=0; i<this.numBlocks; i++){
-    left.push(this.state.blockValues[i]['aniValue'].interpolate({
-      inputRange: [0, 1],
-      outputRange: [Dimensions.get('window').width, -this.blockWidth]
-    }))
-  }
+	        		<View>
+	        			{blocks}
+	        		</View>
 
-  var blocks = []
+	        		<Ball topMargin={top}/>
 
-  for(var i = 0; i<this.numBlocks; i++){
-    blocks.push(<Block left={left[i]} width={this.blockWidth} col={this.state.blockValues[i]['col']}/>)
-  }
-
-   
-    return (
-      <TouchableWithoutFeedback onPress={this.tap}>
-        <View style={styles.container2}>
-        <View>
-        {blocks}
-        </View>
-        <Ball topMargin={top}/>
-        </View>
-      </TouchableWithoutFeedback>
-    );
-  }
+	        	</View>
+	      </TouchableWithoutFeedback>
+	    );
+	  }
 
   
 }
 
+
+
 class Ball extends Component{
-  render(){
-    return(
-    <View>
-      <Animated.View 
-        style={{position: 'absolute',
-        width:50,
-        height:50,
-        borderRadius: 100/2,
-        backgroundColor: 'red',
-        top: this.props.topMargin,
-        left:15}}>
-      </Animated.View>
-    </View>)
-  }
+
+	render(){
+
+    	return(
+    	<View>
+    		<Animated.View 
+	        	style={
+	        		{position: 'absolute',
+	        		width:50,
+		        	height:50,
+		        	borderRadius: 100/2,
+		        	backgroundColor: 'red',
+		        	top: this.props.topMargin,
+		        	left:15}
+		        }>
+      		</Animated.View>
+    	</View>)
+  	}
 }
+
+
 
 
 class Block extends Component {
-  constructor(props) {
-    super(props)
-    this.state = {col:"red"}
-  }
 
-// animate (pos) {
-//   this.setState({col: this.chooseCol()})
-//   this.animatedValue.setValue(pos)
-//   var timeMulti = (1-pos)
-//   if(pos==0 || pos == 1){
-//     timeMulti = 1
-//   }
-//   Animated.timing(
-//     this.animatedValue,
-//     {
-//       toValue: 1,
-//       duration: 4000*timeMulti,
-//       easing: Easing.linear
-//     }
-//   ).start(() => this.animate(0))
-// }
+	render () { 
 
-// chooseCol(){
-//   var col = "white"
-//   var num = Math.random()
-//   // Alert.alert(num)
-//   if(num<0.7){
-//     col="black"
-//   }
-
-//   return col
-// } 
-
-render () { 
-
-  return (
-    <View style={styles.container}>
-      <Animated.View
-        style={{
-          height: 500,
-          width: this.props.width,
-          top: 300,
-          backgroundColor: this.props.col,
-          padding: 0,
-          margin: 0,
-          left: this.props.left}}>
-      </Animated.View>
-    </View>
-)}
+		return (
+		  	<View style={styles.container}>
+		    	<Animated.View
+		        	style={{
+				        height: 500,
+				        width: this.props.width,
+				        top: 300,
+				        backgroundColor: this.props.col,
+				        padding: 0,
+				        margin: 0,
+				        left: this.props.left}}>
+		      	</Animated.View>
+		    </View>
+		)
+	}
 }
 
+
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    // backgroundColor: '#ecf0f1',
-  },
-  container2:{
-    position: 'absolute',
-    top:0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'white'
-  }
+	container: {
+    	flex: 1,
+  	},
+
+  	container2:{
+	    position: 'absolute',
+	    top:0,
+	    bottom: 0,
+	    left: 0,
+	    right: 0,
+	    backgroundColor: 'white'
+  	},
+
+  	score:{
+	  	textAlign: 'center',
+	    top:50,
+	    fontSize: 28
+  	},
+
+  	highScore:{
+	  	textAlign: 'right',
+	    top:25,
+	    fontSize: 18,
+      right:10
+  	}
 });
