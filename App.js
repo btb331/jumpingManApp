@@ -39,7 +39,7 @@ export default class App extends React.Component {
   		var col = "white"
 	  	var num = Math.random()
 
-	  	if(num<0.75||this.blankCount>3){
+	  	if(num<0.60|this.blankCount>3){
 	    	col="black"
 	    	this.blankCount = 0
 	  	}else{
