@@ -23,6 +23,8 @@ export default class App extends React.Component {
 
 	    this.jumping = false
 	    this.alive = true
+
+	    this.blankCount = 0
   	}
 
   	componentDidMount(){
@@ -37,10 +39,12 @@ export default class App extends React.Component {
   		var col = "white"
 	  	var num = Math.random()
 
-	  	if(num<0.65){
+	  	if(num<0.75||this.blankCount>3){
 	    	col="black"
+	    	this.blankCount = 0
+	  	}else{
+	  		this.blankCount++
 	  	}
-
 	  	return col
 	} 
 
@@ -96,7 +100,7 @@ export default class App extends React.Component {
 	    this.state.animatedBall.setValue(0)
 	    this.jumping=true
 
-	    var duration = 500
+	    var duration = 450
 
 	    //sequence for the ball to go up and then down.
 	    Animated.sequence([
